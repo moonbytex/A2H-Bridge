@@ -6,10 +6,17 @@
 
     <depends>com.intellij.modules.platform</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
-
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.moonbytex.a2hbridge.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.moonbytex.a2hbridge.startup.MyProjectActivity" />
+        <!-- Tool Window -->
+        <toolWindow factoryClass="com.github.moonbytex.a2hbridge.ui.A2HToolWindowFactory" id="A2H-Bridge" anchor="right"/>
+
+        <!-- Settings Page -->
+        <applicationConfigurable parentId="tools" instance="com.github.moonbytex.a2hbridge.settings.A2HBridgeSettingsConfigurable" id="com.github.moonbytex.a2hbridge.settings" displayName="A2H-Bridge"/>
+
+        <!-- Persistent Settings -->
+        <applicationService serviceImplementation="com.github.moonbytex.a2hbridge.settings.A2HBridgeSettings"/>
+
+        <!-- Project-level Conversation Manager -->
+        <projectService serviceImplementation="com.github.moonbytex.a2hbridge.conversation.ConversationManager"/>
     </extensions>
 </idea-plugin>

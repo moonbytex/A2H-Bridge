@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>A2H-Bridge</title>
+    <style>
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f5f5;
+            --bg-surface: #f0f0f0;
+            --bg-hover: #e8e8e8;
+            --text-primary: #1a1a1a;
+            --text-secondary: #555555;
+            --text-muted: #999999;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --user-bg: #2563eb;
+            --user-text: #ffffff;
+            --assistant-bg: #f0f0f0;
+            --border: #e0e0e0;
+            --success: #16a34a;
+            --warning: #ca8a04;
+            --error: #dc2626;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+            --scrollbar: #c0c0c0;
+            --scrollbar-hover: #a0a0a0;
+            --dropdown-bg: #ffffff;
+            --dropdown-hover: #f0f0f0;
+            --settings-icon: #555555;
+            --input-bg: #ffffff;
+        }
+
+        body.theme-dark {
+            --bg-primary: #2b2b2b;
+            --bg-secondary: #3c3f41;
+            --bg-surface: #45475a;
+            --bg-hover: #505357;
+            --text-primary: #bbbbbb;
+            --text-secondary: #999999;
+            --text-muted: #777777;
+            --accent: #58a6ff;
+            --accent-hover: #74c7ec;
+            --user-bg: #58a6ff;
+            --user-text: #1e1e2e;
+            --assistant-bg: #45475a;
+            --border: #555555;
+            --success: #3fb950;
+            --warning: #d29922;
+            --error: #f85149;
+            --code-bg: #1e1e2e;
+            --code-text: #cdd6f4;
+            --scrollbar: #555555;
+            --scrollbar-hover: #666666;
+            --dropdown-bg: #3c3f41;
+            --dropdown-hover: #505357;
+            --settings-icon: #999999;
+            --input-bg: #3c3f41;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+
+        .app { display: flex; flex-direction: column; height: 100%; }
+
+        /* Header */
+        .header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 16px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        .header-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .header-actions { display: flex; gap: 8px; align-items: center; }
+
+        .bridge-status {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--text-muted); margin-right: 4px;
+        }
+        .bridge-status.ready { background: var(--success); }
+
+        .settings-btn, .back-btn {
+            background: none; border: none; cursor: pointer; color: var(--settings-icon);
+            padding: 4px; border-radius: 4px; display: flex; align-items: center;
+            transition: background 0.2s;
+        }
+        .settings-btn:hover, .back-btn:hover { background: var(--bg-hover); }
+        .settings-btn svg, .back-btn svg { width: 18px; height: 18px; }
+        .back-btn { color: var(--accent); }
+        .back-btn span { margin-right: 4px; font-size: 13px; }
+
+        /* Settings page */
+        .settings-page {
+            flex: 1; display: none; flex-direction: column; overflow-y: auto;
+            padding: 24px;
+        }
+        .settings-page.active { display: flex; }
+
+        .settings-container {
+            max-width: 520px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .settings-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .settings-header h2 {
+            font-size: 20px; font-weight: 600; margin-bottom: 4px; color: var(--text-primary);
+        }
+        .settings-header p {
+            font-size: 13px; color: var(--text-muted);
+        }
+
+        .setting-group { margin-bottom: 20px; }
+        .setting-label {
+            display: block; font-size: 13px; font-weight: 500;
+            color: var(--text-primary); margin-bottom: 6px;
+        }
+        .setting-hint {
+            display: block; font-size: 12px; color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .setting-input {
+            width: 100%; padding: 8px 12px;
+            background: var(--input-bg); color: var(--text-primary);
+            border: 1px solid var(--border); border-radius: 6px;
+            font-size: 14px; font-family: inherit; outline: none;
+            transition: border-color 0.2s;
+        }
+        .setting-input:focus { border-color: var(--accent); }
+
+        .setting-input-api {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px;
+        }
+
+        .save-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 24px; background: var(--accent); color: #fff;
+            border: none; border-radius: 6px; font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .save-btn:hover { background: var(--accent-hover); }
+        .save-btn.saved { background: var(--success); }
+
+        .save-msg {
+            font-size: 13px; color: var(--success);
+            margin-left: 12px; opacity: 0; transition: opacity 0.3s;
+        }
+        .save-msg.visible { opacity: 1; }
+
+        /* Chat view */
+        .chat-view { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+        .chat-view.hidden { display: none; }
+
+        .messages {
+            flex: 1; overflow-y: auto; padding: 16px; min-height: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message {
+            margin-bottom: 16px;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .message-header {
+            padding: 6px 14px 4px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: left;
+        }
+        .message.user .message-header {
+            color: var(--accent);
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            border-top: 2px solid var(--accent);
+            border-radius: 6px 6px 0 0;
+        }
+        .message.assistant .message-header {
+            color: var(--success);
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            border-top: 2px solid var(--success);
+            border-radius: 6px 6px 0 0;
+        }
+
+        .message-body {
+            padding: 10px 14px;
+            background: var(--assistant-bg);
+            border: 1px solid var(--border);
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            font-size: 14px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            text-align: left;
+        }
+        .message.user .message-body {
+            background: var(--bg-surface);
+        }
+        .message.assistant .message-body {
+            background: var(--bg-primary);
+        }
+
+        .reasoning-section {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .reasoning-toggle {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 12px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .reasoning-toggle:hover {
+            background: var(--bg-hover);
+        }
+        .reasoning-toggle .arrow {
+            display: inline-block;
+            transition: transform 0.2s;
+            font-size: 10px;
+        }
+        .reasoning-toggle.expanded .arrow {
+            transform: rotate(90deg);
+        }
+        .reasoning-content {
+            display: none;
+            padding: 8px 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border);
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .reasoning-content.visible {
+            display: block;
+        }
+
+        .message-body pre {
+            background: var(--code-bg); border: 1px solid var(--border);
+            border-radius: 6px; padding: 10px; margin: 6px 0; overflow-x: auto;
+        }
+        .message-body pre code {
+            font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            font-size: 13px; color: var(--code-text); line-height: 1.5;
+        }
+        .message-body code:not(pre code) {
+            background: var(--bg-surface); padding: 2px 5px; border-radius: 3px;
+            font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+            font-size: 13px;
+        }
+        .message.user .message-body code:not(pre code) {
+            background: rgba(0,0,0,0.15); color: inherit;
+        }
+
+        .code-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 4px 10px; background: #313244; border-radius: 6px 6px 0 0;
+            border: 1px solid #555; border-bottom: none;
+        }
+        .code-lang { font-size: 12px; color: #a6adc8; font-family: monospace; }
+        .copy-btn, .open-btn {
+            background: none; border: 1px solid #555; color: #a6adc8;
+            cursor: pointer; padding: 2px 8px; border-radius: 3px;
+            font-size: 11px; margin-left: 4px;
+        }
+        .copy-btn:hover, .open-btn:hover { color: #89b4fa; border-color: #89b4fa; }
+
+        .tool-call-confirmation {
+            background: var(--bg-surface); border: 1px solid var(--warning);
+            border-radius: 6px; padding: 10px 14px; margin: 6px 0;
+        }
+        .tool-call-confirmation .tool-name {
+            color: var(--warning); font-weight: 600; font-size: 13px; margin-bottom: 4px;
+        }
+        .tool-call-confirmation .tool-args {
+            color: var(--text-secondary); font-size: 12px; font-family: monospace;
+            margin-bottom: 6px; word-break: break-all;
+        }
+        .tool-call-actions { display: flex; gap: 8px; }
+        .btn-allow, .btn-deny {
+            padding: 5px 14px; border: none; border-radius: 5px;
+            cursor: pointer; font-size: 12px; font-weight: 500;
+        }
+        .btn-allow { background: var(--success); color: #fff; }
+        .btn-deny { background: var(--error); color: #fff; }
+
+        /* Input area */
+        .input-area {
+            padding: 8px 12px 10px;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .agent-select {
+            width: 150px;
+            padding: 5px 28px 5px 8px;
+            background: var(--dropdown-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%23999' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+        }
+        .agent-select:focus { border-color: var(--accent); }
+
+        .input-wrapper {
+            flex: 1;
+            display: flex;
+            gap: 6px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper textarea {
+            flex: 1;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            min-height: 38px;
+            max-height: 100px;
+            line-height: 1.4;
+        }
+        .input-wrapper textarea:focus { border-color: var(--accent); }
+        .input-wrapper textarea::placeholder { color: var(--text-muted); }
+
+        .send-btn {
+            width: 38px; height: 38px;
+            background: var(--accent); color: #fff;
+            border: none; border-radius: 8px;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .send-btn:hover { background: var(--accent-hover); }
+        .send-btn:disabled {
+            background: var(--bg-surface); color: var(--text-muted); cursor: not-allowed;
+        }
+        .send-btn svg { width: 16px; height: 16px; }
+
+        .clear-btn {
+            background: none; border: 1px solid var(--border); color: var(--text-muted);
+            cursor: pointer; padding: 5px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .clear-btn:hover { color: var(--error); border-color: var(--error); }
+
+        .typing-indicator { display: flex; gap: 4px; padding: 6px 0; }
+        .typing-indicator span {
+            width: 7px; height: 7px; background: var(--text-muted);
+            border-radius: 50%; animation: bounce 1.4s infinite;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 100%; color: var(--text-muted);
+        }
+        .empty-state svg { width: 44px; height: 44px; margin-bottom: 12px; opacity: 0.4; }
+
+        .message-body h1, .message-body h2, .message-body h3 {
+            margin: 10px 0 6px; color: var(--accent); text-align: left;
+        }
+        .message-body h1 { font-size: 17px; }
+        .message-body h2 { font-size: 15px; }
+        .message-body h3 { font-size: 14px; }
+        .message-body p { margin: 5px 0; text-align: left; }
+        .message-body ul, .message-body ol { margin: 5px 0; padding-left: 20px; }
+        .message-body li { margin: 3px 0; }
+        .message-body strong { color: var(--accent); }
+        .message-body blockquote {
+            border-left: 3px solid var(--accent); padding-left: 10px;
+            color: var(--text-secondary); margin: 6px 0;
+        }
+        .message-body table { border-collapse: collapse; margin: 6px 0; width: 100%; }
+        .message-body table th, .message-body table td {
+            border: 1px solid var(--border); padding: 5px 8px; text-align: left;
+        }
+        .message-body table th { background: var(--bg-hover); }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <div class="header">
+            <span class="header-title" id="headerTitle">A2H-Bridge</span>
+            <div class="header-actions">
+                <button class="settings-btn" id="settingsBtn" onclick="showSettings()" title="设置">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat View -->
+        <div class="chat-view" id="chatView">
+            <div class="messages" id="messages">
+                <div class="empty-state" id="emptyState">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"/>
+                    </svg>
+                    <p style="font-size: 14px; margin-bottom: 4px;">欢迎使用 A2H-Bridge</p>
+                    <p style="font-size: 12px;">Android 到 HarmonyOS 的代码迁移助手</p>
+                </div>
+            </div>
+            <div class="input-area">
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <select class="agent-select" id="agentSelect" onchange="switchAgent(this.value)">
+                        <option value="understanding">理解助手</option>
+                        <option value="code_generation">代码生成</option>
+                        <option value="testing">测试修改</option>
+                    </select>
+                    <button class="clear-btn" onclick="clearConversation()" title="清空对话">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    </button>
+                </div>
+                <div class="input-row" style="margin-top: 6px;">
+                    <div class="input-wrapper">
+                        <textarea id="messageInput" placeholder="输入消息... (Shift+Enter 换行)" rows="1"
+                            onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="settings-page" id="settingsPage">
+            <div class="settings-container">
+                <div class="settings-header">
+                    <div>
+                        <h2>模型配置</h2>
+                        <p>配置 AI 模型的接口地址、密钥和模型名称</p>
+                    </div>
+                    <button class="back-btn" onclick="showChat()">
+                        <span>返回</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                    </button>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label" for="apiBaseUrl">接口地址</label>
+                    <span class="setting-hint">OpenAI 兼容的 API Base URL</span>
+                    <input class="setting-input" type="text" id="apiBaseUrl" placeholder="https://api.openai.com/v1">
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label" for="apiKey">API Key</label>
+                    <span class="setting-hint">用于身份验证的密钥</span>
+                    <input class="setting-input setting-input-api" type="password" id="apiKey" placeholder="sk-...">
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label" for="modelName">模型名称</label>
+                    <span class="setting-hint">使用的模型，如 gpt-4o、glm-5 等</span>
+                    <input class="setting-input" type="text" id="modelName" placeholder="gpt-4o">
+                </div>
+
+                <div style="display:flex;align-items:center;margin-top:24px;">
+                    <button class="save-btn" id="saveBtn" onclick="saveSettings()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        保存
+                    </button>
+                    <span class="save-msg" id="saveMsg">已保存</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentAgent = 'understanding';
+        let isStreaming = false;
+        let currentMessageDiv = null;
+        let messageBuffer = '';
+        let renderTimer = null;
+
+        const messagesContainer = document.getElementById('messages');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const agentSelect = document.getElementById('agentSelect');
+
+        // Page navigation
+        function showSettings() {
+            console.log('[showSettings] called');
+            try {
+                var chatView = document.getElementById('chatView');
+                var settingsPage = document.getElementById('settingsPage');
+                var headerTitle = document.getElementById('headerTitle');
+                var settingsBtn = document.getElementById('settingsBtn');
+
+                console.log('[showSettings] chatView=' + chatView + ', settingsPage=' + settingsPage);
+
+                if (chatView) chatView.classList.add('hidden');
+                if (settingsPage) settingsPage.classList.add('active');
+                if (headerTitle) headerTitle.textContent = '设置';
+                if (settingsBtn) settingsBtn.style.display = 'none';
+
+                console.log('[showSettings] UI updated');
+
+                // Load current settings
+                if (window.kotlinBridge && window.kotlinBridge.loadSettings) {
+                    console.log('[showSettings] Calling loadSettings');
+                    window.kotlinBridge.loadSettings();
+                } else {
+                    console.log('[showSettings] kotlinBridge not available');
+                }
+            } catch (e) {
+                console.error('[showSettings] Error:', e);
+            }
+        }
+
+        function showChat() {
+            document.getElementById('chatView').classList.remove('hidden');
+            document.getElementById('settingsPage').classList.remove('active');
+            document.getElementById('headerTitle').textContent = 'A2H-Bridge';
+            document.getElementById('settingsBtn').style.display = 'flex';
+        }
+
+        // Settings
+        function saveSettings() {
+            var url = document.getElementById('apiBaseUrl').value.trim();
+            var key = document.getElementById('apiKey').value.trim();
+            var model = document.getElementById('modelName').value.trim();
+            if (window.kotlinBridge) {
+                window.kotlinBridge.saveSettings(url, key, model);
+            }
+            var btn = document.getElementById('saveBtn');
+            var msg = document.getElementById('saveMsg');
+            btn.classList.add('saved');
+            btn.innerHTML = '&#10003; 已保存';
+            msg.classList.add('visible');
+            setTimeout(function() {
+                btn.classList.remove('saved');
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 保存';
+                msg.classList.remove('visible');
+            }, 2000);
+        }
+
+        function onSettingsLoaded(url, key, model) {
+            document.getElementById('apiBaseUrl').value = url || '';
+            document.getElementById('apiKey').value = key || '';
+            document.getElementById('modelName').value = model || '';
+        }
+
+        // Auto-resize textarea
+        function autoResize(ta) {
+            ta.style.height = 'auto';
+            ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function sendMessage() {
+            var text = messageInput.value.trim();
+            console.log('[sendMessage] text=' + text + ', isStreaming=' + isStreaming);
+            if (!text || isStreaming) return;
+
+            // Reset for new message cycle
+            currentMessageDiv = null;
+            messageBuffer = '';
+            reasoningBuffer = '';
+
+            hideEmptyState();
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            isStreaming = true;
+            sendBtn.disabled = true;
+
+            appendMessage('user', escapeHtml(text));
+            console.log('[sendMessage] Message appended to DOM');
+
+            console.log('[sendMessage] kotlinBridge exists=' + (typeof window.kotlinBridge !== 'undefined'));
+            console.log('[sendMessage] kotlinBridge.sendMessage exists=' + (window.kotlinBridge && typeof window.kotlinBridge.sendMessage === 'function'));
+
+            if (window.kotlinBridge && window.kotlinBridge.sendMessage) {
+                console.log('[sendMessage] Calling kotlinBridge.sendMessage with agent=' + currentAgent);
+                try {
+                    window.kotlinBridge.sendMessage(currentAgent, text);
+                    console.log('[sendMessage] kotlinBridge.sendMessage called successfully');
+                } catch (e) {
+                    console.error('[sendMessage] Error calling kotlinBridge.sendMessage:', e);
+                    appendMessage('assistant', '[错误: 无法连接到 Kotlin Bridge - ' + e.message + ']');
+                    isStreaming = false;
+                    sendBtn.disabled = false;
+                }
+            } else {
+                console.error('[sendMessage] kotlinBridge not available!');
+                appendMessage('assistant', '[错误: kotlinBridge 未注入，请检查 JCEF 初始化]');
+                isStreaming = false;
+                sendBtn.disabled = false;
+            }
+        }
+
+        function switchAgent(agentId) {
+            currentAgent = agentId;
+            if (window.kotlinBridge) window.kotlinBridge.selectAgent(agentId);
+        }
+
+        function clearConversation() {
+            if (window.kotlinBridge) window.kotlinBridge.clearConversation();
+        }
+
+        function onUserMessage(text) {
+            hideEmptyState();
+            appendMessage('user', escapeHtml(text));
+        }
+
+        function onStreamChunk(text) {
+            // Skip empty chunks to avoid unnecessary renders
+            if (!text || text.length === 0) return;
+            messageBuffer += text;
+            if (renderTimer) clearTimeout(renderTimer);
+            renderTimer = setTimeout(renderBuffer, 50);
+        }
+
+        var reasoningBuffer = '';
+
+        function onReasoningChunk(text) {
+            console.log('[onReasoningChunk] text=' + JSON.stringify(text) + ', len=' + text.length);
+            if (!text || text.length === 0) return;
+            reasoningBuffer += text;
+            console.log('[onReasoningChunk] buffer length=' + reasoningBuffer.length);
+            if (renderTimer) clearTimeout(renderTimer);
+            renderTimer = setTimeout(renderBuffer, 50);
+        }
+
+        function onStreamDone() {
+            if (!isStreaming) return;
+            isStreaming = false;
+            sendBtn.disabled = false;
+            // Cancel any pending render timer
+            if (renderTimer) {
+                clearTimeout(renderTimer);
+                renderTimer = null;
+            }
+            // Final render with whatever's in the buffers
+            if ((messageBuffer.length > 0 || reasoningBuffer.length > 0) && currentMessageDiv) {
+                renderBuffer(true);
+            } else if (currentMessageDiv) {
+                renderBuffer(true);
+            }
+            messageBuffer = '';
+            reasoningBuffer = '';
+            currentMessageDiv = null;
+            scrollToBottom();
+        }
+
+        function toggleReasoning(id, btn) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.classList.toggle('visible');
+                btn.classList.toggle('expanded');
+            }
+        }
+
+        function onToolCallConfirmation(id, name, args) {
+            hideEmptyState();
+            var decodedArgs = args;
+            try { decodedArgs = args.replace(/\\n/g, '\n').replace(/\\'/g, "'"); } catch(e) {}
+            var div = document.createElement('div');
+            div.className = 'tool-call-confirmation';
+            div.innerHTML = '<div class="tool-name">&#9881; 工具调用: ' + escapeHtml(name) + '</div>' +
+                '<div class="tool-args">' + escapeHtml(decodedArgs) + '</div>' +
+                '<div class="tool-call-actions">' +
+                '<button class="btn-allow" onclick="confirmToolCall(\''+id+'\','+true+')">允许</button>' +
+                '<button class="btn-deny" onclick="confirmToolCall(\''+id+'\','+false+')">拒绝</button>' +
+                '</div>';
+            if (!currentMessageDiv) currentMessageDiv = appendMessage('assistant', '');
+            currentMessageDiv.appendChild(div);
+            scrollToBottom();
+        }
+
+        function confirmToolCall(id, confirmed) {
+            if (window.kotlinBridge) window.kotlinBridge.confirmToolCall(id, String(confirmed));
+            document.querySelectorAll('.tool-call-confirmation').forEach(function(el) {
+                var actions = el.querySelector('.tool-call-actions');
+                if (actions) {
+                    actions.remove();
+                    var status = document.createElement('div');
+                    status.style.cssText = 'color:' + (confirmed ? 'var(--success)' : 'var(--error)') + ';font-size:12px;margin-top:4px';
+                    status.textContent = confirmed ? '✓ 已允许' : '✗ 已拒绝';
+                    el.appendChild(status);
+                }
+            });
+        }
+
+        function onConversationCleared() {
+            messagesContainer.innerHTML = '';
+            showEmptyState();
+        }
+
+        function appendMessage(role, html) {
+            var wrapper = document.createElement('div');
+            wrapper.className = 'message ' + role;
+
+            var header = document.createElement('div');
+            header.className = 'message-header';
+            header.textContent = role === 'user' ? '用户' : '智能体';
+
+            var body = document.createElement('div');
+            body.className = 'message-body';
+            if (html) body.innerHTML = html;
+
+            wrapper.appendChild(header);
+            wrapper.appendChild(body);
+            messagesContainer.appendChild(wrapper);
+            scrollToBottom();
+            return body;
+        }
+
+        function renderBuffer(isFinal) {
+            // Only create/update message div if there's content or reasoning
+            var hasReasoning = reasoningBuffer.length > 0;
+            var hasContent = messageBuffer.length > 0;
+            if ((hasReasoning || hasContent) && !currentMessageDiv) {
+                hideEmptyState();
+                currentMessageDiv = appendMessage('assistant', '');
+                showTypingIndicator();
+            }
+            if (currentMessageDiv) {
+                var fullHtml = '';
+                if (hasReasoning) {
+                    var reasoningId = 'reasoning_' + Date.now();
+                    var fullReasoning = escapeHtml(reasoningBuffer);
+                    fullHtml += '<div class="reasoning-section">' +
+                        '<button class="reasoning-toggle" onclick="toggleReasoning(\'' + reasoningId + '\', this)">' +
+                        '<span class="arrow">▶</span> 思考过程 (' + reasoningBuffer.length + ' 字)</button>' +
+                        '<div class="reasoning-content" id="' + reasoningId + '">' + fullReasoning + '</div>' +
+                        '</div>';
+                }
+                if (hasContent) {
+                    fullHtml += renderMarkdown(messageBuffer);
+                }
+                currentMessageDiv.innerHTML = fullHtml;
+                removeTypingIndicator();
+            }
+            if (isFinal) {
+                messageBuffer = '';
+                reasoningBuffer = '';
+            }
+            scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            if (currentMessageDiv && !currentMessageDiv.querySelector('.typing-indicator')) {
+                var ind = document.createElement('div');
+                ind.className = 'typing-indicator';
+                ind.innerHTML = '<span></span><span></span><span></span>';
+                currentMessageDiv.appendChild(ind);
+            }
+        }
+
+        function removeTypingIndicator() {
+            var ind = currentMessageDiv ? currentMessageDiv.querySelector('.typing-indicator') : null;
+            if (ind) ind.remove();
+        }
+
+        function renderMarkdown(text) {
+            if (!text) return '';
+            var html = text;
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(m, lang, code) {
+                var language = lang || 'text';
+                var escapedCode = escapeHtml(code.trim());
+                var uid = 'code_' + Math.random().toString(36).substr(2, 9);
+                return '<div class="code-header"><span class="code-lang">' + escapeHtml(language) + '</span>' +
+                    '<div><button class="copy-btn" onclick="copyCode(\''+uid+'\')">复制</button>' +
+                    '<button class="open-btn" onclick="openCode(\''+uid+'\')">打开</button></div></div>' +
+                    '<pre><code id="'+uid+'">'+escapedCode+'</code></pre>';
+            });
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+            html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+            html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:var(--accent)">$1</a>');
+            html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+            html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/((?:<li>.*<\/li>\n?)+)/g, '<ul>$1</ul>');
+            html = html.replace(/^---$/gm, '<hr style="border-color:var(--border);margin:10px 0">');
+            html = html.replace(/\n/g, '<br>');
+            html = html.replace(/<br>(<h[1-3]>)/g, '$1');
+            html = html.replace(/(<\/h[1-3]>)<br>/g, '$1');
+            html = html.replace(/<br>(<ul>)/g, '$1');
+            html = html.replace(/(<\/ul>)<br>/g, '$1');
+            html = html.replace(/<br>(<pre>)/g, '$1');
+            html = html.replace(/(<\/pre>)<br>/g, '$1');
+            html = html.replace(/<br>(<div class="code-header">)/g, '$1');
+            html = html.replace(/<br>(<blockquote>)/g, '$1');
+            html = html.replace(/(<\/blockquote>)<br>/g, '$1');
+            html = html.replace(/<br>(<hr)/g, '$1');
+            html = html.replace(/(<\/li>)<br>/g, '$1');
+            return html;
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyCode(id) {
+            var code = document.getElementById(id);
+            if (code) {
+                navigator.clipboard.writeText(code.textContent).then(function() {
+                    var btns = document.querySelectorAll('.copy-btn');
+                    btns.forEach(function(btn) {
+                        if (btn.textContent === '复制') {
+                            var onclickStr = btn.getAttribute('onclick') || '';
+                            if (onclickStr.indexOf(id) > -1) {
+                                btn.textContent = '已复制';
+                                setTimeout(function() { btn.textContent = '复制'; }, 2000);
+                            }
+                        }
+                    });
+                });
+            }
+        }
+
+        function openCode(id) {
+            var path = prompt('输入要打开的文件路径:', '');
+            if (path && window.kotlinBridge) window.kotlinBridge.openFileInEditor(path);
+        }
+
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideEmptyState() {
+            var el = document.getElementById('emptyState');
+            if (el) el.style.display = 'none';
+        }
+
+        function showEmptyState() {
+            var el = document.getElementById('emptyState');
+            if (el) el.style.display = 'flex';
+        }
+
+        window.addEventListener('load', function() {
+            console.log('[window.load] DOM loaded, binding events...');
+            messageInput.focus();
+
+            // 绑定设置按钮事件
+            var settingsBtn = document.getElementById('settingsBtn');
+            if (settingsBtn) {
+                settingsBtn.addEventListener('click', function(e) {
+                    console.log('[settingsBtn.click] clicked');
+                    e.preventDefault();
+                    showSettings();
+                });
+                console.log('[window.load] settingsBtn event bound');
+            } else {
+                console.error('[window.load] settingsBtn not found');
+            }
+
+            // 绑定其他按钮事件
+            var sendBtn = document.getElementById('sendBtn');
+            if (sendBtn) {
+                sendBtn.addEventListener('click', function(e) {
+                    console.log('[sendBtn.click] clicked');
+                    e.preventDefault();
+                    sendMessage();
+                });
+            }
+
+            var clearBtn = document.querySelector('.clear-btn');
+            if (clearBtn) {
+                clearBtn.addEventListener('click', function(e) {
+                    console.log('[clearBtn.click] clicked');
+                    e.preventDefault();
+                    clearConversation();
+                });
+            }
+
+            // 绑定返回按钮事件
+            var backBtn = document.querySelector('.back-btn');
+            if (backBtn) {
+                backBtn.addEventListener('click', function(e) {
+                    console.log('[backBtn.click] clicked');
+                    e.preventDefault();
+                    showChat();
+                });
+            }
+
+            // 绑定保存按钮事件
+            var saveBtn = document.getElementById('saveBtn');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function(e) {
+                    console.log('[saveBtn.click] clicked');
+                    e.preventDefault();
+                    saveSettings();
+                });
+            }
+
+            console.log('[window.load] All events bound');
+        });
+
+        // Called by Kotlin when bridge is injected
+        window.onBridgeReady = function() {
+            window.bridgeReady = true;
+            console.log('[onBridgeReady] Bridge is ready');
+        };
+    </script>
+</body>
+</html>
