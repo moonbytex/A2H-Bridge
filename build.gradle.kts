@@ -33,7 +33,7 @@ dependencies {
 
     // HTTP Client for API calls
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.code.gson:gson:2.11.0")
+    implementation("com.google.code.gson:gson:2.14.0")
 
     intellijPlatform {
         intellijIdeaCommunity(providers.gradleProperty("platformVersion"))
