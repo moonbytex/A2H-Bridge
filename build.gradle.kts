@@ -32,7 +32,7 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
 
     // HTTP Client for API calls
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.3.2")
     implementation("com.google.code.gson:gson:2.11.0")
 
     intellijPlatform {
