@@ -162,6 +162,54 @@
         .save-btn:hover { background: var(--accent-hover); }
         .save-btn.saved { background: var(--success); }
 
+        .add-model-input:focus { border-color: var(--accent); }
+        .add-model-input-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+        .add-model-input { flex: 1; }
+        .add-model-confirm-btn, .add-model-cancel-btn {
+            padding: 6px 14px; border: none; border-radius: 6px; cursor: pointer;
+            font-size: 13px; font-weight: 500; white-space: nowrap;
+        }
+        .add-model-confirm-btn { background: var(--accent); color: #fff; }
+        .add-model-confirm-btn:hover { background: var(--accent-hover); }
+        .add-model-cancel-btn { background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border); }
+        .add-model-cancel-btn:hover { background: var(--bg-hover); }
+
+        .add-model-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 16px; background: var(--bg-surface); color: var(--text-secondary);
+            border: 1px dashed var(--border); border-radius: 6px;
+            font-size: 13px; cursor: pointer; margin-top: 8px;
+            transition: all 0.2s;
+        }
+        .add-model-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .model-list-container {
+            max-height: 200px; overflow-y: auto; border: 1px solid var(--border);
+            border-radius: 6px; padding: 4px;
+        }
+        .model-list-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 10px; border-radius: 4px; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .model-list-item:hover { background: var(--bg-hover); }
+        .model-list-item.selected { background: var(--bg-surface); }
+        .model-list-item .model-name {
+            font-size: 13px; font-family: monospace; flex: 1;
+        }
+        .model-list-item.selected .model-name {
+            color: var(--accent); font-weight: 600;
+        }
+        .model-list-item .model-selected-badge {
+            font-size: 11px; color: var(--success); font-weight: 500;
+        }
+        .model-list-item .model-delete-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            padding: 2px 4px; margin-left: 8px; border-radius: 3px; font-size: 14px;
+            line-height: 1;
+        }
+        .model-list-item .model-delete-btn:hover { color: var(--error); }
+
         .save-msg {
             font-size: 13px; color: var(--success);
             margin-left: 12px; opacity: 0; transition: opacity 0.3s;
@@ -320,20 +368,23 @@
 
         /* Input area */
         .input-area {
-            padding: 8px 12px 10px;
+            padding: 10px 14px 12px;
             background: var(--bg-secondary);
             border-top: 1px solid var(--border);
         }
 
-        .input-row {
+        .input-controls {
             display: flex;
-            align-items: flex-end;
-            gap: 6px;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
         }
 
         .agent-select {
-            width: 150px;
-            padding: 5px 28px 5px 8px;
+            width: auto;
+            min-width: 110px;
+            height: 32px;
+            padding: 0 24px 0 8px;
             background: var(--dropdown-bg);
             color: var(--text-primary);
             border: 1px solid var(--border);
@@ -344,11 +395,19 @@
             outline: none;
             appearance: none;
             -webkit-appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%23999' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%23999' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 8px center;
+            background-position: right 6px center;
+            transition: border-color 0.2s;
         }
+        .agent-select:hover { border-color: var(--text-muted); }
         .agent-select:focus { border-color: var(--accent); }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+        }
 
         .input-wrapper {
             flex: 1;
@@ -391,7 +450,8 @@
 
         .clear-btn {
             background: none; border: 1px solid var(--border); color: var(--text-muted);
-            cursor: pointer; padding: 5px; border-radius: 6px;
+            cursor: pointer; padding: 0; border-radius: 6px;
+            width: 32px; height: 32px;
             display: flex; align-items: center; justify-content: center;
             transition: all 0.2s;
         }
@@ -443,7 +503,7 @@
         <div class="header">
             <span class="header-title" id="headerTitle">A2H-Bridge</span>
             <div class="header-actions">
-                <button class="settings-btn" id="settingsBtn" onclick="showSettings()" title="设置">
+                <button class="settings-btn" id="settingsBtn" title="设置">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="3"/>
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -464,21 +524,21 @@
                 </div>
             </div>
             <div class="input-area">
-                <div style="display:flex;align-items:center;gap:6px;">
+                <div class="input-controls">
                     <select class="agent-select" id="agentSelect" onchange="switchAgent(this.value)">
                         <option value="understanding">理解助手</option>
                         <option value="code_generation">代码生成</option>
                         <option value="testing">测试修改</option>
                     </select>
                     <button class="clear-btn" onclick="clearConversation()" title="清空对话">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
                     </button>
                 </div>
-                <div class="input-row" style="margin-top: 6px;">
+                <div class="input-row" style="margin-top: 0;">
                     <div class="input-wrapper">
                         <textarea id="messageInput" placeholder="输入消息... (Shift+Enter 换行)" rows="1"
                             onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
-                        <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <button class="send-btn" id="sendBtn">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
                             </svg>
@@ -515,13 +575,28 @@
                 </div>
 
                 <div class="setting-group">
-                    <label class="setting-label" for="modelName">模型名称</label>
-                    <span class="setting-hint">使用的模型，如 gpt-4o、glm-5 等</span>
-                    <input class="setting-input" type="text" id="modelName" placeholder="gpt-4o">
+                    <label class="setting-label">模型列表</label>
+                    <span class="setting-hint">点击添加按钮添加新模型，点击设置页面的模型列表可选择当前使用的模型</span>
+                    <div id="modelListContainer" class="model-list-container"></div>
+                    <button class="add-model-btn" id="addModelBtn" onclick="showAddModelInput()">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        添加模型
+                    </button>
+                    <div class="add-model-input-row" id="addModelInputRow" style="display:none;">
+                        <input class="setting-input add-model-input" type="text" id="addModelInput" placeholder="输入模型名称...">
+                        <button class="add-model-confirm-btn" id="addModelConfirmBtn" onclick="confirmAddModel()">确定</button>
+                        <button class="add-model-cancel-btn" id="addModelCancelBtn" onclick="hideAddModelInput()">取消</button>
+                    </div>
+                </div>
+
+                <div class="setting-group">
+                    <label class="setting-label" for="modelName">当前模型</label>
+                    <span class="setting-hint">当前选中使用的模型</span>
+                    <input class="setting-input" type="text" id="modelName" readonly placeholder="未选择">
                 </div>
 
                 <div style="display:flex;align-items:center;margin-top:24px;">
-                    <button class="save-btn" id="saveBtn" onclick="saveSettings()">
+                    <button class="save-btn" id="saveBtn">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                         保存
                     </button>
@@ -584,9 +659,13 @@
         function saveSettings() {
             var url = document.getElementById('apiBaseUrl').value.trim();
             var key = document.getElementById('apiKey').value.trim();
-            var model = document.getElementById('modelName').value.trim();
+            var models = [];
+            document.querySelectorAll('.model-list-item').forEach(function(el) {
+                models.push(el.getAttribute('data-model'));
+            });
+            var selectedModel = document.getElementById('modelName').value.trim();
             if (window.kotlinBridge) {
-                window.kotlinBridge.saveSettings(url, key, model);
+                window.kotlinBridge.saveSettings(url, key, JSON.stringify(models), selectedModel);
             }
             var btn = document.getElementById('saveBtn');
             var msg = document.getElementById('saveMsg');
@@ -600,10 +679,119 @@
             }, 2000);
         }
 
-        function onSettingsLoaded(url, key, model) {
+        function onSettingsLoaded(url, key, models, selectedModel) {
             document.getElementById('apiBaseUrl').value = url || '';
             document.getElementById('apiKey').value = key || '';
-            document.getElementById('modelName').value = model || '';
+            document.getElementById('modelName').value = selectedModel || '';
+
+            if (!models || models.length === 0) models = ['glm-5'];
+            if (!selectedModel || selectedModel.length === 0) selectedModel = models[0];
+
+            renderModelList(models, selectedModel);
+        }
+
+        function renderModelList(models, selectedModel) {
+            var container = document.getElementById('modelListContainer');
+            container.innerHTML = '';
+            models.forEach(function(model) {
+                var item = document.createElement('div');
+                item.className = 'model-list-item' + (model === selectedModel ? ' selected' : '');
+                item.setAttribute('data-model', model);
+
+                var name = document.createElement('span');
+                name.className = 'model-name';
+                name.textContent = model;
+
+                var badge = document.createElement('span');
+                badge.className = 'model-selected-badge';
+                if (model === selectedModel) badge.textContent = '使用中';
+
+                var deleteBtn = document.createElement('button');
+                deleteBtn.className = 'model-delete-btn';
+                deleteBtn.innerHTML = '&#10005;';
+                deleteBtn.title = '删除';
+                deleteBtn.onclick = (function(m) {
+                    return function(e) {
+                        e.stopPropagation();
+                        deleteModel(m);
+                    };
+                })(model);
+
+                item.appendChild(name);
+                item.appendChild(badge);
+                item.appendChild(deleteBtn);
+
+                item.onclick = (function(m) {
+                    return function() {
+                        selectModelFromList(m);
+                    };
+                })(model);
+
+                container.appendChild(item);
+            });
+        }
+
+        function selectModelFromList(model) {
+            document.getElementById('modelName').value = model;
+            renderModelList(getCurrentModels(), model);
+        }
+
+        function deleteModel(model) {
+            var container = document.getElementById('modelListContainer');
+            var items = container.querySelectorAll('.model-list-item');
+            if (items.length <= 1) return; // Don't delete last model
+
+            var models = getCurrentModels();
+            var idx = models.indexOf(model);
+            if (idx === -1) return;
+
+            var selectedModel = document.getElementById('modelName').value;
+            models.splice(idx, 1);
+
+            // If we deleted the selected model, select the first one
+            if (model === selectedModel) {
+                selectedModel = models[0];
+                document.getElementById('modelName').value = selectedModel;
+            }
+
+            renderModelList(models, selectedModel);
+        }
+
+        function showAddModelInput() {
+            document.getElementById('addModelInputRow').style.display = 'flex';
+            document.getElementById('addModelBtn').style.display = 'none';
+            var input = document.getElementById('addModelInput');
+            input.value = '';
+            input.focus();
+        }
+
+        function hideAddModelInput() {
+            document.getElementById('addModelInputRow').style.display = 'none';
+            document.getElementById('addModelBtn').style.display = 'inline-flex';
+        }
+
+        function confirmAddModel() {
+            var input = document.getElementById('addModelInput');
+            var newModel = input.value.trim();
+            if (!newModel) return;
+
+            var models = getCurrentModels();
+            if (models.indexOf(newModel) !== -1) return; // Already exists
+
+            models.push(newModel);
+            var selectedModel = document.getElementById('modelName').value;
+            renderModelList(models, selectedModel);
+
+            hideAddModelInput();
+        }
+
+        function getCurrentModels() {
+            var models = [];
+            document.querySelectorAll('.model-list-item').forEach(function(el) {
+                models.push(el.getAttribute('data-model'));
+            });
+            if (models.length === 0) models = ['glm-5'];
+            return models;
         }
 
         // Auto-resize textarea
@@ -703,11 +891,7 @@
                 renderTimer = null;
             }
             // Final render with whatever's in the buffers
-            if ((messageBuffer.length > 0 || reasoningBuffer.length > 0) && currentMessageDiv) {
-                renderBuffer(true);
-            } else if (currentMessageDiv) {
-                renderBuffer(true);
-            }
+            renderBuffer(true);
             messageBuffer = '';
             reasoningBuffer = '';
             currentMessageDiv = null;
@@ -961,6 +1145,21 @@
                 });
             }
 
+            // 添加模型输入框回车事件
+            var addModelInput = document.getElementById('addModelInput');
+            if (addModelInput) {
+                addModelInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        confirmAddModel();
+                    }
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        hideAddModelInput();
+                    }
+                });
+            }
+
             console.log('[window.load] All events bound');
         });
 
@@ -968,6 +1167,10 @@
         window.onBridgeReady = function() {
             window.bridgeReady = true;
             console.log('[onBridgeReady] Bridge is ready');
+            // Load settings to populate model dropdown
+            if (window.kotlinBridge) {
+                window.kotlinBridge.loadSettings();
+            }
         };
     </script>
 </body>

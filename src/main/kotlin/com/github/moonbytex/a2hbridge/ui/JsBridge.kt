@@ -66,8 +66,20 @@ class JsBridge(
                     "saveSettings" -> {
                         val url = msg.get("url")?.asString ?: ""
                         val key = msg.get("key")?.asString ?: ""
-                        val model = msg.get("model")?.asString ?: ""
-                        handleSaveSettings(url, key, model)
+                        val modelsStr = msg.get("models")?.asString ?: ""
+                        val selectedModel = msg.get("selectedModel")?.asString ?: ""
+                        log.info("saveSettings received: url=$url, modelsStr=$modelsStr, selectedModel=$selectedModel")
+                        println("[A2H-DEBUG] saveSettings: url=$url, modelsStr=$modelsStr, selectedModel=$selectedModel")
+                        val models = if (modelsStr.isNotEmpty()) {
+                            com.google.gson.JsonParser.parseString(modelsStr).asJsonArray
+                        } else {
+                            com.google.gson.JsonArray()
+                        }
+                        handleSaveSettings(url, key, models, selectedModel)
+                    }
+                    "addModel" -> {
+                        val newModel = msg.get("model")?.asString ?: ""
+                        handleAddModel(newModel)
                     }
                 }
             } catch (e: Exception) {
@@ -124,8 +136,8 @@ class JsBridge(
                     loadSettings: function() {
                         ${query.inject("JSON.stringify({type:'loadSettings'})")}
                     },
-                    saveSettings: function(url, key, model) {
-                        ${query.inject("JSON.stringify({type:'saveSettings',url:url,key:key,model:model})")}
+                    saveSettings: function(url, key, models, selectedModel) {
+                        ${query.inject("JSON.stringify({type:'saveSettings',url:url,key:key,models:models,selectedModel:selectedModel})")}
                     }
                 };
 
@@ -278,19 +290,47 @@ class JsBridge(
         log.info("handleLoadSettings")
         val settings = com.github.moonbytex.a2hbridge.settings.A2HBridgeSettings.getInstance()
         val state = settings.getState()
-        val escapedUrl = state.apiBaseUrl.replace("'", "\\'")
-        val escapedKey = state.apiKey.replace("'", "\\'")
-        val escapedModel = state.modelName.replace("'", "\\'")
-        jsCall("window.onSettingsLoaded('$escapedUrl', '$escapedKey', '$escapedModel')")
+        val escapedUrl = state.apiBaseUrl.replace("\\", "\\\\").replace("'", "\\'")
+        val escapedKey = state.apiKey.replace("\\", "\\\\").replace("'", "\\'")
+        val selectedModel = state.modelName.replace("\\", "\\\\").replace("'", "\\'")
+        // Send model list as raw JS array (not a string)
+        val modelsJs = state.modelList.joinToString(", ") { "'${it.replace("\\", "\\\\").replace("'", "\\'")}'" }
+        jsCall("window.onSettingsLoaded('$escapedUrl', '$escapedKey', [${modelsJs}], '$selectedModel')")
     }
 
-    private fun handleSaveSettings(url: String, key: String, model: String) {
-        log.info("handleSaveSettings: url=$url")
+    private fun handleSaveSettings(url: String, key: String, models: com.google.gson.JsonArray, selectedModel: String) {
+        log.info("handleSaveSettings: url=$url, models=$models, selectedModel=$selectedModel")
+        val settings = com.github.moonbytex.a2hbridge.settings.A2HBridgeSettings.getInstance()
+        val modelList = mutableListOf<String>()
+        models.forEach { modelList.add(it.asString) }
+        log.info("Parsed model list: $modelList")
+        // Create a NEW State instance so persistence framework recognizes the change
+        val newState = com.github.moonbytex.a2hbridge.settings.A2HBridgeSettings.State(
+            apiBaseUrl = url,
+            apiKey = key,
+            modelList = modelList,
+            modelName = selectedModel
+        )
+        settings.loadState(newState)
+    }
+
+    private fun handleAddModel(modelName: String) {
+        log.info("handleAddModel: $modelName")
         val settings = com.github.moonbytex.a2hbridge.settings.A2HBridgeSettings.getInstance()
         val state = settings.getState()
-        state.apiBaseUrl = url
-        state.apiKey = key
-        state.modelName = model
-        settings.loadState(state)
+        if (modelName.isNotBlank() && modelName !in state.modelList) {
+            state.modelList.add(modelName)
+            if (state.modelName.isBlank() || state.modelName !in state.modelList) {
+                state.modelName = modelName
+            }
+            // Create a NEW State instance for persistence
+            val newState = com.github.moonbytex.a2hbridge.settings.A2HBridgeSettings.State(
+                apiBaseUrl = state.apiBaseUrl,
+                apiKey = state.apiKey,
+                modelList = state.modelList.toMutableList(),
+                modelName = state.modelName
+            )
+            settings.loadState(newState)
+        }
     }
 }

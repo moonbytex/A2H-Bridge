@@ -14,6 +14,7 @@ class A2HBridgeSettings : PersistentStateComponent<A2HBridgeSettings.State> {
     data class State(
         var apiBaseUrl: String = "https://coding.dashscope.aliyuncs.com/v1",
         var apiKey: String = "sk-sp-39540c68e5f04e30a8ed5f713172acc7",
+        var modelList: MutableList<String> = mutableListOf("glm-5"),
         var modelName: String = "glm-5"
     )
 
